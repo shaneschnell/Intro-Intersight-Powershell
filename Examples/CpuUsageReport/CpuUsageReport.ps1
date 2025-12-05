@@ -1,4 +1,13 @@
 #================================================================================================
+# Parameters
+#================================================================================================
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)][ValidateSet('1day','7days','30days')][string]$duration
+)
+
+
+#================================================================================================
 # Report name & output file
 #================================================================================================
 $reportName = "CpuUsageReport"
@@ -11,10 +20,25 @@ if ($env:OS -eq "Windows_NT") {
     $outFile = "$env:HOME/Downloads/$reportName.$date.xlsx"
 }
 
+switch ($duration) {
+    '1day' {
+        $period   = "PT4H" # 4-hour granularity
+        $timespan = -1
+    }
+    '7days' {
+        $period   = "P1D" # 1-day granularity
+        $timespan = -7
+    }
+    '30days' {
+        $period   = "P7D" # 1-week granularity
+        $timespan = -30
+    }
+}
+
 #================================================================================================
 # Time window (last 30 days)
 #================================================================================================
-$startTime = [DateTime]::UtcNow.AddDays(-30)
+$startTime = [DateTime]::UtcNow.AddDays($timespan)
 $endTime   = [DateTime]::UtcNow
 
 $startIso = $startTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -46,7 +70,7 @@ foreach ($server in $poweredOnHosts) {
     "dataSource": "PhysicalEntities",
     "granularity": {
       "type": "period",
-      "period": "P7D",
+      "period": "$period",
       "timeZone": "America/Los_Angeles",
       "origin": "$startIso"
     },
