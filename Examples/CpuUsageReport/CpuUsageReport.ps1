@@ -51,9 +51,10 @@ Import-Module Intersight.PowerShell
 Import-Module -Name ImportExcel
 
 #================================================================================================
-# Gather Powered-on hosts that are IMM mode
+# Gather Powered-on hosts that are IMM mode, Server Profile Names
 #================================================================================================
-$poweredOnHosts = Get-IntersightComputePhysicalSummary | Where-Object { $_.OperPowerState -eq 'on' -and $_.ManagementMode -eq 'Intersight' -and $_.Model -notlike 'UCSB*'} | Select-Object DeviceMoId, Name #-First 10
+$poweredOnHosts = Get-IntersightComputePhysicalSummary | Where-Object { $_.OperPowerState -eq 'on' -and $_.ManagementMode -eq 'Intersight' -and $_.Model -notlike 'UCSB*'} | Select-Object DeviceMoId, Name, Model, Serial #-First 10
+$allProfiles = (Get-IntersightServerProfile -Top 1000 -Expand 'AssociatedServer($select=Name,Serial)' -Select 'Name,AssociatedServer')
 
 #================================================================================================
 # Build result objects with per-host CPUAvg
@@ -129,10 +130,16 @@ foreach ($server in $poweredOnHosts) {
     # Calculate CPU average for THIS server
     $cpuavg = ($results.event | Measure-Object -Property 'hw-cpu-utilization_c0-Avg' -Average).Average
 
+    # Pull Server Profile Name
+    $serverProfile = ($allProfiles.results | Where-Object {$_.AssociatedServer.ActualInstance.Name -eq $serverName}).name
+
     $reportRow = New-Object PSObject
     $reportRow | Add-Member -MemberType NoteProperty -Name "ServerName" -Value $serverName
+    $reportRow | Add-Member -MemberType NoteProperty -Name "ServerProfile" -Value $serverProfile
+    $reportRow | Add-Member -MemberType NoteProperty -Name "PID" -Value $server.Model
+    $reportRow | Add-Member -MemberType NoteProperty -Name "Serial" -Value $server.Serial
     $reportRow | Add-Member -MemberType NoteProperty -Name "DeviceMoId" -Value $server.DeviceMoId
-    $reportRow | Add-Member -MemberType NoteProperty -Name "CPUAvg"     -Value $cpuavg
+    $reportRow | Add-Member -MemberType NoteProperty -Name "CPUAvg" -Value $cpuavg
     $report += $reportRow
 }
 
