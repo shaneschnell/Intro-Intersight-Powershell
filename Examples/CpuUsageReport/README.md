@@ -4,7 +4,7 @@ This report gathers the Average CPU Usage over the past month for all powered on
 It will export a xlsx file in the downloads directory.
 
 ## Server CPU Metrics
-The Server CPU Metrics (Physical Processor -> Active CPU Utilization) is supported only on X-Series, Rack-Servers M6+ platform only in IMM mode.  The minimum version is 5.2.2.240080
+The Server CPU Metrics (Physical Processor -> Active CPU Utilization) is supported only on X-Series, Rack-Servers M6+ platform only in IMM mode.  The minimum version is 5.2(2.240080)
 
 ## Parameters
 There is a required parameter named duration.  There are three options: 1day, 7days, or 30days.  
