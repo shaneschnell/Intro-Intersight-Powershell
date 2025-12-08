@@ -65,7 +65,7 @@ foreach ($server in $poweredOnHosts) {
   Write-Host "ServerName: $serverName"
 
     # Telemetry query JSON
-    $query = @"
+    $avgquery = @"
   {
     "queryType": "groupBy",
     "dataSource": "PhysicalEntities",
@@ -121,14 +121,61 @@ foreach ($server in $poweredOnHosts) {
   }
 "@
 
+  $maxquery = @"
+{
+  "queryType": "groupBy",
+  "dataSource": "PhysicalEntities",
+  "granularity": {
+    "type": "period",
+    "period": "$period",
+    "timeZone": "America/Los_Angeles",
+    "origin": "$startIso"
+  },
+  "intervals": [
+    "$startIso/$endIso"
+  ],
+  "dimensions": [],
+  "filter": {
+    "type": "and",
+    "fields": [
+      {
+        "type": "selector",
+        "dimension": "host.name",
+        "value": "$serverName"
+      },
+      {
+        "type": "selector",
+        "dimension": "instrument.name",
+        "value": "hw.cpu"
+      }
+    ]
+  },
+  "aggregations": [
+    {
+      "type": "doubleMax",
+      "name": "hw-cpu-utilization_c0_max-Max",
+      "fieldName": "hw.cpu.utilization_c0_max"
+    },
+    {
+      "type": "thetaSketch",
+      "name": "endpoint_count",
+      "fieldName": "host.id"
+    }
+  ]
+}
+"@
+
     # Convert JSON string to hashtable for the Intersight call
-    $queryHash = $query | ConvertFrom-Json -AsHashTable
+    $avgqueryHash = $avgquery | ConvertFrom-Json -AsHashTable
+    $maxqueryHash = $maxquery | ConvertFrom-Json -AsHashTable
 
     # Run the query
-    $results = New-IntersightManagedObject -ObjectType telemetry.TimeSerie -AdditionalProperties $queryHash | ConvertFrom-Json
+    $avgresults = New-IntersightManagedObject -ObjectType telemetry.TimeSerie -AdditionalProperties $avgqueryHash | ConvertFrom-Json
+    $maxresults = New-IntersightManagedObject -ObjectType telemetry.TimeSerie -AdditionalProperties $maxqueryHash | ConvertFrom-Json
 
-    # Calculate CPU average for THIS server
-    $cpuavg = ($results.event | Measure-Object -Property 'hw-cpu-utilization_c0-Avg' -Average).Average
+    # Calculate CPU average and Maximum for THIS server
+    $cpuavg = ($avgresults.event | Measure-Object -Property 'hw-cpu-utilization_c0-Avg' -Average).Average
+    $cpumax = ($maxresults.event | Measure-Object -Property 'hw-cpu-utilization_c0_max-Max' -Maximum).Maximum
 
     # Pull Server Profile Name
     $serverProfile = ($allProfiles.results | Where-Object {$_.AssociatedServer.ActualInstance.Name -eq $serverName}).name
@@ -141,6 +188,7 @@ foreach ($server in $poweredOnHosts) {
     $reportRow | Add-Member -MemberType NoteProperty -Name "Firmware" -Value $server.Firmware
     $reportRow | Add-Member -MemberType NoteProperty -Name "DeviceMoId" -Value $server.DeviceMoId
     $reportRow | Add-Member -MemberType NoteProperty -Name "CPUAvg" -Value $cpuavg
+    $reportRow | Add-Member -MemberType NoteProperty -Name "CPUMax" -Value $cpumax
     $report += $reportRow
 }
 
