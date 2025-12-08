@@ -1,5 +1,5 @@
 # CPU Usage Report
-This report gathers the Average CPU Usage over the past month for all powered on servers that are using IMM
+This report gathers the Average CPU Usage and Maximum CPU Usage over desired time range for all powered on servers that are using IMM
 
 It will export a xlsx file in the downloads directory.
 
