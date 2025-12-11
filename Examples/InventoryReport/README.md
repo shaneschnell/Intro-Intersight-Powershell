@@ -9,6 +9,7 @@ It will export a xlsx file in the downloads directory.
 - Model
 - Serial Number
 - Firmware Version
+- Management Mode
 - Device MoID
 
 ## Requirements

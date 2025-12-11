@@ -29,7 +29,7 @@ Import-Module -Name ImportExcel
 #================================================================================================
 # Gather Powered-on hosts and Server Profile Names
 #================================================================================================
-$poweredOnHosts = Get-IntersightComputePhysicalSummary | Where-Object { $_.OperPowerState -eq 'on' } | Select-Object DeviceMoId, Name, Model, Serial, Firmware
+$poweredOnHosts = Get-IntersightComputePhysicalSummary | Where-Object { $_.OperPowerState -eq 'on' }
 $allProfiles = (Get-IntersightServerProfile -Top 1000 -Expand 'AssociatedServer($select=Name,Serial)' -Select 'Name,AssociatedServer')
 
 
@@ -50,6 +50,7 @@ foreach ($server in $poweredOnHosts) {
     $reportRow | Add-Member -MemberType NoteProperty -Name "Model" -Value $server.Model
     $reportRow | Add-Member -MemberType NoteProperty -Name "Serial" -Value $server.Serial
     $reportRow | Add-Member -MemberType NoteProperty -Name "Firmware" -Value $server.Firmware
+    $reportRow | Add-Member -MemberType NoteProperty -Name "ManagementMode" -Value $server.ManagementMode
     $reportRow | Add-Member -MemberType NoteProperty -Name "DeviceMoId" -Value $server.DeviceMoId
     $report += $reportRow
 }
